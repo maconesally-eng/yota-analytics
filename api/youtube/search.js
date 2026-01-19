@@ -8,6 +8,11 @@ export default async function handler(req, res) {
     const sessionToken = cookies.yota_session;
     const vipKey = req.headers['x-vip-key'];
 
+    console.log('DEBUG: Search Request from ' + (req.headers['x-forwarded-for'] || 'unknown'));
+    console.log('DEBUG: Headers - VIP:', vipKey ? 'PRESENT' : 'MISSING');
+    console.log('DEBUG: Env - VIP Key:', process.env.VIP_ACCESS_KEY ? 'CONFIGURED' : 'MISSING');
+    console.log('DEBUG: Env - API Key:', process.env.YOUTUBE_API_KEY ? 'CONFIGURED' : 'MISSING');
+
     let auth = null;
 
     // A. Check for VIP Bypass (Dev Mode)
@@ -15,10 +20,9 @@ export default async function handler(req, res) {
         console.log('⚡ VIP Access Granted');
         auth = process.env.YOUTUBE_API_KEY; // Use API Key for server-side search
         if (!auth) {
-            // Attempt to use a simplified auth or warn
-            console.warn('VIP Key accepted but YOUTUBE_API_KEY is missing. Search might fail if quota is strict.');
-            // Some public endpoints work without auth, but Search usually requires Key or OAuth.
-            // We will try with the client_id as a fallback or just empty (might fail)
+            console.error('CRITICAL: VIP Access granted but YOUTUBE_API_KEY is MISSING in environment variables.');
+        } else {
+            console.log('DEBUG: Using Server-Side YOUTUBE_API_KEY');
         }
     }
     // B. Standard User Auth
@@ -27,14 +31,25 @@ export default async function handler(req, res) {
             const sessionData = decrypt(sessionToken);
             const session = JSON.parse(sessionData);
             if (Date.now() >= session.expiry) {
+                console.log('DEBUG: Session Expired');
                 return res.status(401).json({ error: 'Session expired' });
             }
             auth = session.access_token;
+            console.log('DEBUG: Using User OAuth Token');
         } catch (e) {
+            console.error('DEBUG: Session Decrypt Error', e);
             return res.status(401).json({ error: 'Invalid session' });
         }
     } else {
-        return res.status(401).json({ error: 'Not authenticated' });
+        console.log('DEBUG: No Auth Method (No VIP Key matched, No Session)');
+        return res.status(401).json({
+            error: 'Not authenticated',
+            debug: {
+                vipHeaderSent: !!vipKey,
+                vipKeyMatch: vipKey === process.env.VIP_ACCESS_KEY,
+                envVipConfigured: !!process.env.VIP_ACCESS_KEY
+            }
+        });
     }
 
     const { q } = req.query;
