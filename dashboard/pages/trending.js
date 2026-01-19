@@ -94,7 +94,8 @@ async function loadAndRenderVideos(nicheId) {
         const headers = {};
         if (vipKey) headers['x-vip-key'] = vipKey;
 
-        const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(niche.query)}`, { headers });
+        // Use the search endpoint for trending topics (which sorts by popularity)
+        const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(niche.query)}&order=viewCount&part=snippet,statistics`, { headers });
 
         if (!response.ok) throw new Error('Failed to fetch trending videos');
 
