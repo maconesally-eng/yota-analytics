@@ -1,0 +1,17 @@
+{
+    "name": "yota-analytics",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "python -m http.server 5173 --directory dashboard",
+        "vercel-build": "echo 'Building serverless functions...'"
+    },
+    "dependencies": {
+        "cookie": "^0.6.0",
+        "googleapis": "^131.0.0"
+    },
+    "devDependencies": {},
+    "engines": {
+        "node": ">=18"
+    }
+}
