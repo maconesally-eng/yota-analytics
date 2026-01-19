@@ -1458,6 +1458,82 @@ body {
     padding: var(--spacing-md);
 }
 
+
+.badge-pill {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: var(--font-size-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--success);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
+    }
+
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(74, 222, 128, 0);
+    }
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+    }
+}
+
+/* ========================================
+   CLICKABLE LOGO
+   ======================================== */
+.clickable-logo {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.clickable-logo:hover {
+    opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+    .landing-hero {
+        padding: var(--spacing-md);
+        min-height: auto;
+        padding-top: 4rem;
+    }
+
+    .hero-title {
+        font-size: 2.5rem;
+    }
+
+    .hero-ctas {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-large {
+        width: 100%;
+    }
+
+    .hero-cards-preview {
+        display: none;
+        /* Hide preview cards on mobile to avoid clutter */
+    }
+}
+
 .feed-filters {
     display: flex;
     gap: var(--spacing-md);
@@ -1817,4 +1893,211 @@ body {
     .toggle-btn {
         flex: 1;
     }
+}
+
+/* ========================================
+   DISCOVERY MODE SELECTOR
+   ======================================== */
+.discovery-modes {
+    width: 100%;
+}
+
+.mode-selector {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+}
+
+.mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mode-btn:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-primary);
+}
+
+.mode-btn.active {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(138, 43, 226, 0.3);
+}
+
+.mode-icon {
+    font-size: 1.1rem;
+}
+
+.mode-label {
+    font-weight: 500;
+}
+
+/* ========================================
+   SCORE BADGES & BREAKDOWN
+   ======================================== */
+.score-badge {
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+}
+
+.score-breakdown {
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-xs);
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+}
+
+.score-breakdown summary {
+    cursor: pointer;
+    color: var(--accent-primary);
+    font-weight: 500;
+    padding: var(--spacing-xs);
+}
+
+.score-breakdown summary:hover {
+    text-decoration: underline;
+}
+
+.breakdown-content {
+    padding: var(--spacing-sm);
+    display: grid;
+    gap: 0.35rem;
+}
+
+.breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.2rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.breakdown-row span:first-child {
+    color: var(--text-muted);
+}
+
+.breakdown-row span:last-child {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.breakdown-row.highlight {
+    background: rgba(138, 43, 226, 0.2);
+    border-radius: var(--radius-sm);
+    padding: 0.25rem 0.5rem;
+    border-bottom: none;
+}
+
+.breakdown-row.highlight span:last-child {
+    color: var(--accent-primary);
+}
+
+/* ========================================
+   RESPONSIVE: DISCOVERY MODES
+   ======================================== */
+@media (max-width: 768px) {
+    .mode-selector {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.35rem;
+    }
+
+    .mode-btn {
+        flex-direction: column;
+        padding: 0.5rem 0.25rem;
+        font-size: var(--font-size-xs);
+    }
+
+    .mode-label {
+        display: none;
+    }
+
+    .mode-icon {
+        font-size: 1.5rem;
+    }
+}
+
+/* ========================================
+   FEED ACTION BUTTONS (Save / Not Interested)
+   ======================================== */
+.feed-card-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+    justify-content: center;
+}
+
+.action-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(4px);
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.save-btn:hover {
+    border-color: #4ade80;
+    color: #4ade80;
+}
+
+.not-interested-btn:hover {
+    border-color: #f87171;
+    color: #f87171;
+}
+
+/* ========================================
+   TOAST NOTIFICATION
+   ======================================== */
+.toast-notification {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--bg-card);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.toast-notification.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ========================================
+   AGE BADGE IMPROVEMENTS
+   ======================================== */
+.age-badge {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
 }

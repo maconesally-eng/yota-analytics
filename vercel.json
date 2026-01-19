@@ -3,6 +3,33 @@
     "outputDirectory": "dashboard",
     "installCommand": null,
     "framework": null,
+    "redirects": [
+        {
+            "source": "/feed",
+            "destination": "/#/feed",
+            "permanent": false
+        },
+        {
+            "source": "/search",
+            "destination": "/#/search",
+            "permanent": false
+        },
+        {
+            "source": "/trending",
+            "destination": "/#/trending",
+            "permanent": false
+        },
+        {
+            "source": "/settings",
+            "destination": "/#/settings",
+            "permanent": false
+        },
+        {
+            "source": "/pages/:page.js",
+            "destination": "/#/:page",
+            "permanent": false
+        }
+    ],
     "rewrites": [
         {
             "source": "/(.*)",

@@ -1,42 +1,17 @@
 /**
  * Yota Analytics — Swipe Feed Page
- * Mobile-first viral content discovery with Geo/Language targeting
+ * Discovery Modes with VidIQ-Style Scoring + Session Learning
  */
 
-const FEED_NICHES = [
-    { id: 'family', label: '👨‍👩‍👧 Family' },
-    { id: 'babies', label: '👶 Babies' },
-    { id: 'couples', label: '💑 Couples' },
-    { id: 'comedy', label: '😂 Comedy' },
-    { id: 'pranks', label: '🎭 Pranks' },
-    { id: 'tech', label: '💻 Tech' }
+const DISCOVERY_MODES = [
+    { id: 'forYou', label: '✨ For You', icon: '✨', desc: 'Personalized' },
+    { id: 'trending', label: '🔥 Trending (24h)', icon: '🔥', desc: 'views/hour' },
+    { id: 'weekMovers', label: '📈 Week Movers', icon: '📈', desc: 'views/day' },
+    { id: 'risingSmall', label: '🌱 Rising Small', icon: '🌱', desc: '<200K subs' },
+    { id: 'wildcard', label: '🎲 Wildcard', icon: '🎲', desc: 'Diverse' }
 ];
 
-const FEED_WINDOWS = [
-    { days: 1, label: '24h' },
-    { days: 7, label: '7 days' },
-    { days: 30, label: '30 days' }
-];
-
-const REGIONS = [
-    { code: 'US', label: '🇺🇸 US' },
-    { code: 'GB', label: '🇬🇧 UK' },
-    { code: 'CA', label: '🇨🇦 CA' },
-    { code: 'AU', label: '🇦🇺 AU' },
-    { code: 'PR', label: '🇵🇷 PR' },
-    { code: '', label: '🌍 Global' }
-];
-
-const LANGUAGES = [
-    { code: 'en', label: 'English' },
-    { code: 'es', label: 'Spanish' },
-    { code: 'mixed', label: 'Mixed' }
-];
-
-let currentFeedNiche = 'family';
-let currentWindowDays = 7;
-let currentRegion = 'US';
-let currentLanguage = 'en';
+let currentMode = 'forYou';
 let feedItems = [];
 let currentCardIndex = 0;
 let shownVideoIds = new Set();
@@ -45,15 +20,16 @@ let nextPageToken = null;
 function renderFeed(container) {
     container.innerHTML = `
         <div class="feed-container">
-            <!-- Filters Panel -->
+            <!-- Discovery Mode Selector -->
             <div class="feed-filters">
                 <div class="filter-row">
-                    <div class="filter-group">
-                        <label>Niche</label>
-                        <div class="filter-chips" id="niche-chips">
-                            ${FEED_NICHES.map(n => `
-                                <button class="chip ${n.id === currentFeedNiche ? 'active' : ''}" data-niche="${n.id}">
-                                    ${n.label}
+                    <div class="filter-group discovery-modes">
+                        <label>Discovery Mode</label>
+                        <div class="mode-selector" id="mode-selector">
+                            ${DISCOVERY_MODES.map(m => `
+                                <button class="mode-btn ${m.id === currentMode ? 'active' : ''}" data-mode="${m.id}" title="${m.desc}">
+                                    <span class="mode-icon">${m.icon}</span>
+                                    <span class="mode-label">${m.label.replace(/^[^\s]+\s/, '')}</span>
                                 </button>
                             `).join('')}
                         </div>
@@ -61,28 +37,10 @@ function renderFeed(container) {
                 </div>
 
                 <div class="filter-row">
-                    <div class="filter-group">
-                        <label>Targeting</label>
-                        <select id="region-select" class="filter-select">
-                            ${REGIONS.map(r => `<option value="${r.code}" ${r.code === currentRegion ? 'selected' : ''}>${r.label}</option>`).join('')}
-                        </select>
-                        <div class="toggle-group" id="lang-toggle">
-                            ${LANGUAGES.map(l => `
-                                <button class="toggle-btn ${l.code === currentLanguage ? 'active' : ''}" data-lang="${l.code}">
-                                    ${l.label}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                     <div class="filter-group">
-                        <label>Recency</label>
-                        <div class="filter-chips" id="window-chips">
-                            ${FEED_WINDOWS.map(w => `
-                                <button class="chip ${w.days === currentWindowDays ? 'active' : ''}" data-days="${w.days}">
-                                    ${w.label}
-                                </button>
-                            `).join('')}
-                        </div>
+                    <div class="filter-group personalization-group">
+                       <span id="personalized-badge" class="badge-pill">
+                           <span class="pulse-dot"></span> Detecting Region...
+                       </span>
                     </div>
                     <button class="btn btn-secondary icon-only" id="refresh-feed-btn" title="Refresh Feed">🔄</button>
                 </div>
@@ -91,7 +49,7 @@ function renderFeed(container) {
             <!-- Feed Cards -->
             <div class="feed-cards" id="feed-cards">
                 <div class="feed-loading">
-                    <p>🔍 Scanning YouTube...</p>
+                    <p>🔍 Discovering content...</p>
                 </div>
             </div>
 
@@ -107,37 +65,11 @@ function renderFeed(container) {
 }
 
 function setupFeedListeners() {
-    // Niche chips
-    document.querySelectorAll('#niche-chips .chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            currentFeedNiche = chip.dataset.niche;
-            document.querySelectorAll('#niche-chips .chip').forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-            resetAndLoadFeed();
-        });
-    });
-
-    // Window chips
-    document.querySelectorAll('#window-chips .chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            currentWindowDays = parseInt(chip.dataset.days, 10);
-            document.querySelectorAll('#window-chips .chip').forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-            resetAndLoadFeed();
-        });
-    });
-
-    // Region Select
-    document.getElementById('region-select')?.addEventListener('change', (e) => {
-        currentRegion = e.target.value;
-        resetAndLoadFeed();
-    });
-
-    // Language Toggle
-    document.querySelectorAll('#lang-toggle .toggle-btn').forEach(btn => {
+    // Mode selector
+    document.querySelectorAll('#mode-selector .mode-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            currentLanguage = btn.dataset.lang;
-            document.querySelectorAll('#lang-toggle .toggle-btn').forEach(b => b.classList.remove('active'));
+            currentMode = btn.dataset.mode;
+            document.querySelectorAll('#mode-selector .mode-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             resetAndLoadFeed();
         });
@@ -158,7 +90,6 @@ function setupFeedListeners() {
     cardsContainer?.addEventListener('touchend', (e) => {
         const touchEndY = e.changedTouches[0].clientY;
         if (touchStartY - touchEndY > 50) {
-            // Swipe up
             showNextCard();
         }
     });
@@ -175,27 +106,44 @@ async function loadFeed() {
     const container = document.getElementById('feed-cards');
     if (!container) return;
 
-    container.innerHTML = '<div class="feed-loading"><p>🔍 Scanning YouTube...</p></div>';
+    container.innerHTML = '<div class="feed-loading"><p>🔍 Discovering content...</p></div>';
 
     const vipKey = localStorage.getItem('yota_vip_key');
     const headers = {};
     if (vipKey) headers['x-vip-key'] = vipKey;
 
     const seed = Date.now();
-    let url = `/api/youtube/feed?niche=${currentFeedNiche}&windowDays=${currentWindowDays}&seed=${seed}&regionCode=${currentRegion}&languageMode=${currentLanguage}`;
+    let url = `/api/youtube/feed?mode=${currentMode}&seed=${seed}`;
     if (nextPageToken) url += `&pageToken=${nextPageToken}`;
 
     try {
         const response = await fetch(url, { headers });
         if (!response.ok) throw new Error('Feed fetch failed');
 
-        const data = await response.json();
-        // Dedup against clientside cache just in case
-        const newItems = data.items.filter(v => !shownVideoIds.has(v.id));
-        feedItems = newItems; // Ideally append here if paging, but for "swipe feed" simple replacement works for now
-        nextPageToken = data.nextPageToken;
+        let data = await response.json();
 
-        // Mark as shown
+        // Update badges
+        const badgeEl = document.getElementById('personalized-badge');
+        if (badgeEl && data.meta) {
+            const region = data.meta.regionCode || 'US';
+            const flag = getFlagEmoji(region);
+            const modeDesc = data.meta.modeDescription || 'Personalized';
+            badgeEl.innerHTML = `<span class="pulse-dot"></span> ${flag} ${region} • ${modeDesc}`;
+        }
+
+        // Apply session learning (filter & penalties)
+        let videos = data.items;
+        if (window.YotaSession) {
+            videos = window.YotaSession.filterVideosBySession(videos);
+            videos = window.YotaSession.applySessionPenalties(videos);
+            // Re-sort after penalties
+            videos.sort((a, b) => b.velocityScore - a.velocityScore);
+        }
+
+        // Dedup
+        const newItems = videos.filter(v => !shownVideoIds.has(v.id));
+        feedItems = newItems;
+        nextPageToken = data.nextPageToken;
         newItems.forEach(v => shownVideoIds.add(v.id));
 
         currentCardIndex = 0;
@@ -216,31 +164,66 @@ function renderCurrentCard() {
     if (!container) return;
 
     if (feedItems.length === 0) {
-        container.innerHTML = '<div class="feed-empty"><p>No videos found for this filter.</p></div>';
+        container.innerHTML = '<div class="feed-empty"><p>No videos found for this mode.</p></div>';
         return;
     }
 
     const video = feedItems[currentCardIndex];
     const videoUrl = `https://www.youtube.com/watch?v=${video.id}`;
+    const countryFlag = video.channelCountry ? ` ${getFlagEmoji(video.channelCountry)}` : '';
+    const sb = video.scoreBreakdown || {};
 
-    // Country flag helper
-    const countryFlag = video.channelCountry ? ` | ${getFlagEmoji(video.channelCountry)}` : '';
+    // Velocity label based on mode
+    const velocityLabel = currentMode === 'trending'
+        ? `${formatNumber(sb.viewsPerHour || 0)}/hr`
+        : `${formatNumber(sb.viewsPerDay || 0)}/day`;
+
+    // Age label for verification
+    const ageLabel = video.ageHours < 24
+        ? `${Math.round(video.ageHours)}h ago`
+        : formatAge(video.ageDays);
 
     container.innerHTML = `
-        <div class="feed-card" onclick="window.open('${videoUrl}', '_blank')">
-            <img class="feed-card-thumb" src="${video.thumbnail}" alt="${video.title}">
+        <div class="feed-card">
+            <img class="feed-card-thumb" src="${video.thumbnail}" alt="${video.title}" onclick="window.open('${videoUrl}', '_blank')">
             <div class="feed-card-overlay">
                 <div class="feed-card-meta">
-                    <span class="velocity-badge">⚡ ${formatNumber(video.viewsPerDay)}/day</span>
-                    <span class="age-badge">${formatAge(video.ageDays)}</span>
+                    <span class="velocity-badge">⚡ ${velocityLabel}</span>
+                    <span class="age-badge">⏰ ${ageLabel}</span>
+                    <span class="score-badge" title="VidIQ Score">🎯 ${formatNumber(video.velocityScore)}</span>
                 </div>
-                <h2 class="feed-card-title">${video.title}</h2>
+                <h2 class="feed-card-title" onclick="window.open('${videoUrl}', '_blank')">${video.title}</h2>
                 <p class="feed-card-channel">${video.channelTitle}${countryFlag}</p>
                 <div class="feed-card-stats">
                     <span>👁️ ${formatNumber(video.views)}</span>
                     <span>👍 ${formatNumber(video.likes)}</span>
                     <span>💬 ${formatNumber(video.comments)}</span>
                 </div>
+                
+                <!-- Session Learning Actions -->
+                <div class="feed-card-actions">
+                    <button class="action-btn save-btn" onclick="handleSaveVideo('${video.id}', '${video.theme || 'general'}')" title="Save">
+                        💾 Save
+                    </button>
+                    <button class="action-btn not-interested-btn" onclick="handleNotInterested('${video.id}', '${video.channelId}', '${video.theme || 'general'}')" title="Not Interested">
+                        👎 Not Interested
+                    </button>
+                </div>
+                
+                <!-- Score Breakdown (Expandable) -->
+                <details class="score-breakdown">
+                    <summary>📊 Why this ranks</summary>
+                    <div class="breakdown-content">
+                        <div class="breakdown-row"><span>Views/Hour</span><span>${formatNumber(sb.viewsPerHour || 0)}</span></div>
+                        <div class="breakdown-row"><span>Views/Day</span><span>${formatNumber(sb.viewsPerDay || 0)}</span></div>
+                        <div class="breakdown-row"><span>Engagement</span><span>${sb.engagementRate || '0%'}</span></div>
+                        <div class="breakdown-row"><span>Like Rate</span><span>${sb.likeRate || '0%'}</span></div>
+                        <div class="breakdown-row"><span>Freshness</span><span>${sb.freshnessBoost || '1.00'}x</span></div>
+                        ${sb.diversityFactor && sb.diversityFactor !== '1.00' ? `<div class="breakdown-row"><span>Diversity</span><span>${sb.diversityFactor}x</span></div>` : ''}
+                        ${sb.isLocalMatch ? '<div class="breakdown-row highlight"><span>🎯 Local Match</span><span>+Boost</span></div>' : ''}
+                        ${video.sessionMultiplier && video.sessionMultiplier !== 1 ? `<div class="breakdown-row"><span>Session</span><span>${video.sessionMultiplier.toFixed(2)}x</span></div>` : ''}
+                    </div>
+                </details>
             </div>
         </div>
         <div class="feed-nav">
@@ -251,12 +234,43 @@ function renderCurrentCard() {
     `;
 }
 
+function handleNotInterested(videoId, channelId, theme) {
+    if (window.YotaSession) {
+        window.YotaSession.markNotInterested(videoId, channelId, theme);
+        // Show feedback
+        showToast('Hidden from feed');
+        // Move to next card
+        feedItems = feedItems.filter(v => v.id !== videoId);
+        if (currentCardIndex >= feedItems.length) currentCardIndex = Math.max(0, feedItems.length - 1);
+        renderCurrentCard();
+    }
+}
+
+function handleSaveVideo(videoId, theme) {
+    if (window.YotaSession) {
+        window.YotaSession.saveVideo(videoId, theme);
+        showToast('Saved!');
+    }
+}
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
+}
+
 function showNextCard() {
     if (currentCardIndex < feedItems.length - 1) {
         currentCardIndex++;
         renderCurrentCard();
     } else if (nextPageToken) {
-        loadFeed(); // Load more
+        loadFeed();
     }
 }
 
@@ -274,13 +288,15 @@ function formatNumber(num) {
 }
 
 function formatAge(days) {
-    if (days < 1) return 'Today';
+    if (days < 0.1) return 'Just now';
+    if (days < 1) return Math.round(days * 24) + 'h ago';
     if (days < 2) return 'Yesterday';
-    if (days < 7) return Math.round(days) + ' days ago';
-    return Math.round(days / 7) + ' weeks ago';
+    if (days < 7) return Math.round(days) + 'd ago';
+    return Math.round(days / 7) + 'w ago';
 }
 
 function getFlagEmoji(countryCode) {
+    if (!countryCode || countryCode.length !== 2) return '🌍';
     const codePoints = countryCode
         .toUpperCase()
         .split('')
@@ -292,3 +308,6 @@ function getFlagEmoji(countryCode) {
 window.showNextCard = showNextCard;
 window.showPrevCard = showPrevCard;
 window.renderFeed = renderFeed;
+window.loadFeed = loadFeed;
+window.handleNotInterested = handleNotInterested;
+window.handleSaveVideo = handleSaveVideo;
