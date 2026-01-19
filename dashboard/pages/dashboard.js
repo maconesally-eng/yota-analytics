@@ -81,12 +81,19 @@ async function renderDashboard(container) {
     container.innerHTML = `
         ${banner}
         ${renderChannelCard(data.channel)}
+        <div id="daily-ideas-container"></div>
         ${renderMomentumCard(data.insights)}
         ${renderinsightsGrid(data.insights)}
         ${renderBestVideoCard(data.insights)}
         ${renderRecentVideos(data.recent_videos)}
         ${renderFooter(data.generated_at)}
     `;
+
+    // Initialize Daily Ideas Widget
+    if (window.DailyIdeasWidget) {
+        const ideasWidget = new window.DailyIdeasWidget('daily-ideas-container');
+        ideasWidget.render();
+    }
 }
 
 function renderChannelCard(channel) {
@@ -174,8 +181,11 @@ function renderRecentVideos(videos) {
 
     const videoItems = videos.slice(0, 10).map(video => `
         <div class="video-item">
-            <span class="video-title">${escapeHtml(video.title)}</span>
-            <span class="video-views">${formatNumber(video.views)} views</span>
+            <div class="video-info-col">
+                <span class="video-title">${escapeHtml(video.title)}</span>
+                <span class="video-views">${formatNumber(video.views)} views</span>
+            </div>
+            ${renderOutlierBadge(video)}
         </div>
     `).join('');
 
@@ -184,6 +194,21 @@ function renderRecentVideos(videos) {
             <h3>Recent Videos</h3>
             <div class="videos-list">${videoItems}</div>
         </section>
+    `;
+}
+
+function renderOutlierBadge(video) {
+    if (!video.outlierScore || video.outlierScore <= 1.0) return '';
+
+    // Color coding based on intensity
+    let badgeClass = 'outlier-low';
+    if (video.outlierScore >= 5.0) badgeClass = 'outlier-epic'; // Pink/Purple
+    else if (video.outlierScore >= 2.0) badgeClass = 'outlier-high'; // Green
+
+    return `
+        <span class="outlier-badge ${badgeClass}" title="${video.outlierScore}x more views than average">
+            ⚡ ${video.outlierScore}x
+        </span>
     `;
 }
 

@@ -55,15 +55,31 @@ class LiveAnalytics {
                 avg_views_per_video: 0,
                 avg_engagement_rate: 0,
                 upload_consistency: 'Unknown',
-                best_performing_video: 'None'
+                best_performing_video: 'None',
+                outliers: []
             };
         }
 
-        // 1. Average Views
+        // 1. Average & Median Views (Median is better for outliers)
+        const moves = videos.map(v => v.views).sort((a, b) => a - b);
+        const mid = Math.floor(moves.length / 2);
+        const medianViews = moves.length % 2 !== 0 ? moves[mid] : (moves[mid - 1] + moves[mid]) / 2;
+
         const totalViews = videos.reduce((sum, v) => sum + v.views, 0);
         const avgViews = totalViews / videos.length;
 
-        // 2. Momentum Score
+        // Use average if median is too low (new channel case)
+        const baseline = Math.max(medianViews, avgViews, 10);
+
+        // 2. Identify Outliers
+        // An outlier is defined as 1.5x+ performance vs baseline
+        videos.forEach(v => {
+            const multiplier = v.views / baseline;
+            v.outlierScore = multiplier > 1 ? parseFloat(multiplier.toFixed(1)) : 0;
+            v.isOutlier = multiplier >= 2.0; // Flag high performers
+        });
+
+        // 3. Momentum Score
         // Compare avg of last 5 videos vs avg of last 20
         const last5 = videos.slice(0, 5);
         const last20 = videos.slice(0, 20);
@@ -77,7 +93,7 @@ class LiveAnalytics {
 
         const momentumLabel = momentumScore > 70 ? 'High Growth' : momentumScore > 40 ? 'Steady' : 'Needs Push';
 
-        // 3. Best Upload Day
+        // 4. Best Upload Day
         const dayCounts = {};
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -98,14 +114,14 @@ class LiveAnalytics {
             }
         });
 
-        // 4. Engagement Rate
+        // 5. Engagement Rate
         const totalEngagement = videos.reduce((sum, v) => sum + v.likes + v.comments, 0);
         const avgEngagement = totalViews > 0 ? (totalEngagement / totalViews) * 100 : 0;
 
-        // 5. Best Video
+        // 6. Best Video
         const bestVideo = videos.reduce((prev, current) => (prev.views > current.views) ? prev : current);
 
-        // 6. Consistency
+        // 7. Consistency
         // Calculate weeks covered
         const oldest = new Date(videos[videos.length - 1].publishedAt);
         const newest = new Date(videos[0].publishedAt);
@@ -120,7 +136,8 @@ class LiveAnalytics {
             avg_views_per_video: avgViews,
             avg_engagement_rate: avgEngagement,
             upload_consistency: consistency,
-            best_performing_video: bestVideo.title
+            best_performing_video: bestVideo.title,
+            scored_videos: videos // Return videos with added outlier scores
         };
     }
 }
