@@ -1286,3 +1286,40 @@ body {
     opacity: 1;
     transform: scale(1.1);
 }
+
+/* Search Results Styling */
+.channel-result-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+}
+
+.channel-thumb-u {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.channel-info {
+    flex: 1;
+}
+
+.channel-info h3 {
+    margin: 0 0 4px 0;
+    font-size: var(--font-size-base);
+}
+
+.videos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.video-meta {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    margin-top: 4px;
+}

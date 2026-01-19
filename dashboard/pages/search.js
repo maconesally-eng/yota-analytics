@@ -143,46 +143,101 @@ async function performSearch(query) {
 
     showLoading();
 
-    // TODO: Call Python search API
-    // For now, show instructions to run search manually
-    setTimeout(() => {
+    try {
+        // Construct API URL based on mode
+        let url = `/api/youtube/search?q=${encodeURIComponent(query)}`;
+        if (currentSearchMode !== 'all') {
+            url += `&type=${currentSearchMode}`;
+        }
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Search failed');
+
+        const data = await response.json();
+        searchResults = data.items || [];
+
         hideLoading();
-        showSearchInstructions(query);
-    }, 500);
+        renderResults(searchResults);
+
+    } catch (error) {
+        console.error('Search error:', error);
+        showErrorState();
+    }
 }
 
-function showSearchInstructions(query) {
+function renderResults(results) {
     const container = document.getElementById('results-container');
     const empty = document.getElementById('search-empty');
-
     if (empty) empty.classList.add('hidden');
     if (container) container.classList.remove('hidden');
 
-    const channelsTab = document.getElementById('channels-tab');
-    if (channelsTab) {
-        channelsTab.innerHTML = `
-            <div class="search-instructions">
-                <h3>🔧 Manual Search Required</h3>
-                <p>To search YouTube, run this command:</p>
-                <div class="code-block">
-                    <code>python tools/search.py "${escapeHtml(query)}" ${currentSearchMode}</code>
-                    <button class="copy-btn" onclick="copyToClipboard('python tools/search.py \\"${escapeHtml(query)}\\" ${currentSearchMode}')">
-                        📋 Copy
-                    </button>
-                </div>
-                <p class="help-text">
-                    This will search YouTube and return results in your terminal.
-                    Future milestone will integrate this into the dashboard automatically.
-                </p>
-                <div class="quota-warning">
-                    ⚠️ <strong>Note:</strong> Search costs 100 API units per query (only 100 searches/day)
-                </div>
-            </div>
-        `;
+    const channels = results.filter(item => item.id.kind === 'youtube#channel');
+    const videos = results.filter(item => item.id.kind === 'youtube#video');
+
+    // Update counts
+    document.getElementById('channels-count').textContent = channels.length;
+    document.getElementById('videos-count').textContent = videos.length;
+
+    // Render Tabs
+    renderChannelsTab(channels);
+    renderVideosTab(videos);
+
+    // Auto-switch to tab with results
+    if (currentSearchMode === 'channel' || (channels.length > 0 && videos.length === 0)) {
+        switchTab('channels');
+    } else {
+        switchTab('videos');
+    }
+}
+
+function renderChannelsTab(channels) {
+    const container = document.getElementById('channels-tab');
+    if (channels.length === 0) {
+        container.innerHTML = '<p class="text-muted" style="text-align:center; padding: 2rem;">No channels found.</p>';
+        return;
     }
 
-    document.getElementById('channels-count').textContent = '?';
-    document.getElementById('videos-count').textContent = '?';
+    container.innerHTML = channels.map(channel => `
+        <div class="channel-result-item card">
+            <img src="${channel.snippet.thumbnails.default.url}" class="channel-thumb-u" alt="${channel.snippet.title}">
+            <div class="channel-info">
+                <h3>${escapeHtml(channel.snippet.title)}</h3>
+                <p class="text-muted">${escapeHtml(channel.snippet.description)}</p>
+            </div>
+            <a href="https://youtube.com/channel/${channel.id.channelId}" target="_blank" class="btn">View Channel ↗</a>
+        </div>
+    `).join('');
+}
+
+function renderVideosTab(videos) {
+    const container = document.getElementById('videos-tab');
+    if (videos.length === 0) {
+        container.innerHTML = '<p class="text-muted" style="text-align:center; padding: 2rem;">No videos found.</p>';
+        return;
+    }
+
+    container.innerHTML = `<div class="videos-grid">` + videos.map(video => `
+        <div class="video-card">
+            <img src="${video.snippet.thumbnails.medium.url}" alt="${video.snippet.title}" class="video-thumb">
+            <div class="video-info">
+                <h3 class="video-title">${escapeHtml(video.snippet.title)}</h3>
+                <p class="channel-name">${escapeHtml(video.snippet.channelTitle)}</p>
+                <div class="video-meta">
+                    <span>${new Date(video.snippet.publishedAt).toLocaleDateString()}</span>
+                </div>
+                <a href="https://www.youtube.com/watch?v=${video.id.videoId}" target="_blank" class="watch-link">Watch ↗</a>
+            </div>
+        </div>
+    `).join('') + `</div>`;
+}
+
+function showErrorState() {
+    const container = document.getElementById('search-loading');
+    container.classList.remove('hidden');
+    container.innerHTML = `
+        <p class="error-message">⚠️ Search failed. Please try again.</p>
+        <button class="btn" onclick="performSearch(document.getElementById('search-input').value)">Retry</button>
+    `;
 }
 
 function switchTab(tab) {
