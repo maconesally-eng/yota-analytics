@@ -30,6 +30,17 @@ function renderSettings(container) {
             <p>Yota Analytics v1.0</p>
             <p class="help-text">Built for couples, families, and Gen-Z creator teams.</p>
         </section>
+
+        <!-- Developer Mode -->
+        <section class="card settings-section dev-mode-section">
+            <h3>👨‍💻 Developer Mode (VIP)</h3>
+            <p class="help-text">Enter your VIP Key to bypass search limits.</p>
+            <div class="input-group" style="margin-top: 1rem;">
+                <input type="password" id="vip-key-input" class="search-input" placeholder="Enter VIP Key" style="border: 1px solid var(--border-color);">
+                <button id="save-vip-btn" class="btn btn-primary">Save Key</button>
+            </div>
+            <p id="vip-status" class="status-msg hidden" style="margin-top:0.5rem;"></p>
+        </section>
     `;
 
     // Attach event listeners
@@ -41,6 +52,37 @@ function renderSettings(container) {
                     window.stateManager.clearAll();
                     alert('All data cleared!');
                     window.router.navigate('/settings');
+                }
+            });
+        }
+
+        // VIP Key Logic
+        const vipInput = document.getElementById('vip-key-input');
+        const saveVipBtn = document.getElementById('save-vip-btn');
+        const statusMsg = document.getElementById('vip-status');
+
+        if (vipInput && saveVipBtn) {
+            // Load existing
+            const existingKey = localStorage.getItem('yota_vip_key');
+            if (existingKey) {
+                vipInput.value = existingKey;
+                statusMsg.textContent = '✅ VIP Access Active';
+                statusMsg.classList.remove('hidden');
+                statusMsg.style.color = 'var(--accent-green)';
+            }
+
+            saveVipBtn.addEventListener('click', () => {
+                const key = vipInput.value.trim();
+                if (key) {
+                    localStorage.setItem('yota_vip_key', key);
+                    statusMsg.textContent = '✅ VIP Key Saved';
+                    statusMsg.classList.remove('hidden');
+                    statusMsg.style.color = 'var(--accent-green)';
+                } else {
+                    localStorage.removeItem('yota_vip_key');
+                    statusMsg.textContent = '❌ VIP Key Removed';
+                    statusMsg.classList.remove('hidden');
+                    statusMsg.style.color = 'var(--accent-red)';
                 }
             });
         }

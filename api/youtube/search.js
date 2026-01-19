@@ -6,8 +6,34 @@ import crypto from 'crypto';
 export default async function handler(req, res) {
     const cookies = cookie.parse(req.headers.cookie || '');
     const sessionToken = cookies.yota_session;
+    const vipKey = req.headers['x-vip-key'];
 
-    if (!sessionToken) {
+    let auth = null;
+
+    // A. Check for VIP Bypass (Dev Mode)
+    if (vipKey && vipKey === process.env.VIP_ACCESS_KEY) {
+        console.log('⚡ VIP Access Granted');
+        auth = process.env.YOUTUBE_API_KEY; // Use API Key for server-side search
+        if (!auth) {
+            // Attempt to use a simplified auth or warn
+            console.warn('VIP Key accepted but YOUTUBE_API_KEY is missing. Search might fail if quota is strict.');
+            // Some public endpoints work without auth, but Search usually requires Key or OAuth.
+            // We will try with the client_id as a fallback or just empty (might fail)
+        }
+    }
+    // B. Standard User Auth
+    else if (sessionToken) {
+        try {
+            const sessionData = decrypt(sessionToken);
+            const session = JSON.parse(sessionData);
+            if (Date.now() >= session.expiry) {
+                return res.status(401).json({ error: 'Session expired' });
+            }
+            auth = session.access_token;
+        } catch (e) {
+            return res.status(401).json({ error: 'Invalid session' });
+        }
+    } else {
         return res.status(401).json({ error: 'Not authenticated' });
     }
 
@@ -17,16 +43,9 @@ export default async function handler(req, res) {
     }
 
     try {
-        const sessionData = decrypt(sessionToken);
-        const session = JSON.parse(sessionData);
-
-        if (Date.now() >= session.expiry) {
-            return res.status(401).json({ error: 'Session expired' });
-        }
-
         const youtube = google.youtube({
             version: 'v3',
-            auth: session.access_token
+            auth: auth
         });
 
         // 1. Search for videos

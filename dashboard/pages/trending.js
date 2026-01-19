@@ -48,8 +48,9 @@ async function renderTrending(container) {
         </div>
     `;
 
-    // Check auth
-    if (!window.authManager || !window.authManager.isSignedIn()) {
+    // Check auth (allow bypass if VIP key exists)
+    const hasVipKey = !!localStorage.getItem('yota_vip_key');
+    if (!hasVipKey && (!window.authManager || !window.authManager.isSignedIn())) {
         renderAuthPrompt(document.getElementById('trending-content'));
         return;
     }
@@ -88,7 +89,12 @@ async function loadAndRenderVideos(nicheId) {
 
     try {
         const niche = NICHES.find(n => n.id === nicheId);
-        const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(niche.query)}`);
+
+        const vipKey = localStorage.getItem('yota_vip_key');
+        const headers = {};
+        if (vipKey) headers['x-vip-key'] = vipKey;
+
+        const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(niche.query)}`, { headers });
 
         if (!response.ok) throw new Error('Failed to fetch trending videos');
 

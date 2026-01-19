@@ -150,7 +150,13 @@ async function performSearch(query) {
             url += `&type=${currentSearchMode}`;
         }
 
-        const response = await fetch(url);
+        const vipKey = localStorage.getItem('yota_vip_key');
+        const headers = {};
+        if (vipKey) {
+            headers['x-vip-key'] = vipKey;
+        }
+
+        const response = await fetch(url, { headers });
         if (response.status === 401) throw new Error('Unauthorized');
         if (!response.ok) throw new Error('Search failed');
 
