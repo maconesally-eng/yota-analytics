@@ -39,8 +39,8 @@ export default async function handler(req, res) {
     console.log(`Advanced Search: q="${q}", mode=${mode}, window=${windowDaysInt}d`);
 
     try {
-        // Step 1: Get AI Search Plan
-        const planUrl = `${getBaseUrl(req)}/api/ai/search-plan?q=${encodeURIComponent(q)}`;
+        // Step 1: Get AI Search Plan (using unified /api/ai endpoint)
+        const planUrl = `${getBaseUrl(req)}/api/ai?action=search-plan&q=${encodeURIComponent(q)}`;
         const planHeaders = {};
         if (vipKey) planHeaders['x-vip-key'] = vipKey;
         if (req.headers.cookie) planHeaders['cookie'] = req.headers.cookie;
