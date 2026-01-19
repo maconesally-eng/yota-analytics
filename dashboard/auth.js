@@ -50,6 +50,12 @@ class AuthManager {
      * Sign in with Google
      */
     signIn() {
+        // SECURITY: Disable OAuth in production until backend is implemented
+        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            alert('⚠️ SECURITY NOTICE\n\nOAuth is disabled on the public demo site due to security limitations.\n\nReason: This app currently stores tokens in localStorage (insecure).\n\nTo use authentication:\n1. Clone the repository\n2. Run locally: python -m http.server 5173\n3. Or wait for backend implementation\n\nSee SECURITY_REPORT.md for details.');
+            return;
+        }
+
         if (!this.tokenClient) {
             console.error('Token client not initialized');
             return;
