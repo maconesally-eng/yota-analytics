@@ -42,7 +42,15 @@ export default async function handler(req, res) {
     }
 
     // Parse query params
-    const { niche = 'family', windowDays = '7', pageToken, seed } = req.query;
+    const {
+        niche = 'family',
+        windowDays = '7',
+        pageToken,
+        seed,
+        regionCode = 'US',
+        languageMode = 'en' // 'en', 'es', 'mixed'
+    } = req.query;
+
     const windowDaysInt = parseInt(windowDays, 10) || 7;
 
     // Calculate publishedAfter date
@@ -51,24 +59,57 @@ export default async function handler(req, res) {
     const publishedAfterISO = publishedAfter.toISOString();
 
     const query = NICHE_QUERIES[niche] || NICHE_QUERIES.family;
+    const youtube = google.youtube({ version: 'v3', auth });
 
     try {
-        const youtube = google.youtube({ version: 'v3', auth });
+        let items = [];
+        let nextToken = null;
 
-        // Step 1: Search for recent videos (order=date ensures recency)
-        const searchResponse = await youtube.search.list({
-            part: ['id', 'snippet'],
-            q: query,
-            type: 'video',
-            order: 'date',
-            publishedAfter: publishedAfterISO,
-            maxResults: 25,
-            relevanceLanguage: 'en',
-            regionCode: 'US',
-            pageToken: pageToken || undefined
-        });
+        // Helper for search request
+        const fetchSearch = async (lang) => {
+            return youtube.search.list({
+                part: ['id', 'snippet'],
+                q: query,
+                type: 'video',
+                order: 'date',
+                publishedAfter: publishedAfterISO,
+                maxResults: languageMode === 'mixed' ? 15 : 25, // Fetch fewer per lang if mixed
+                relevanceLanguage: lang,
+                regionCode: regionCode,
+                pageToken: pageToken || undefined
+            });
+        };
 
-        const videoIds = searchResponse.data.items
+        // Step 1: Search for recent videos based on language mode
+        if (languageMode === 'mixed') {
+            // Parallel fetch for English and Spanish
+            const [enRes, esRes] = await Promise.all([
+                fetchSearch('en').catch(e => ({ data: { items: [] } })),
+                fetchSearch('es').catch(e => ({ data: { items: [] } }))
+            ]);
+
+            // Merge and dedupe by videoId
+            const allItems = [...(enRes.data.items || []), ...(esRes.data.items || [])];
+            const seen = new Set();
+            items = allItems.filter(item => {
+                const id = item.id.videoId;
+                if (!id || seen.has(id)) return false;
+                seen.add(id);
+                return true;
+            });
+
+            // For pagination in mixed mode, we just use the EN token for simplicity or null
+            // A true robust mixed pagination is complex; simplified here for MVP
+            nextToken = enRes.data.nextPageToken || null;
+
+        } else {
+            // Single language mode
+            const res = await fetchSearch(languageMode);
+            items = res.data.items || [];
+            nextToken = res.data.nextPageToken || null;
+        }
+
+        const videoIds = items
             .filter(item => item.id.videoId)
             .map(item => item.id.videoId)
             .join(',');
@@ -82,6 +123,26 @@ export default async function handler(req, res) {
             part: ['statistics', 'snippet', 'contentDetails'],
             id: videoIds
         });
+
+        // Optional: Fetch Channel details for Country (Best effort)
+        const channelIds = [...new Set(statsResponse.data.items.map(i => i.snippet.channelId))];
+        let channelCountries = {};
+
+        if (channelIds.length > 0) {
+            try {
+                const channelsRes = await youtube.channels.list({
+                    part: ['snippet'],
+                    id: channelIds.join(',')
+                });
+                channelsRes.data.items.forEach(c => {
+                    if (c.snippet.country) {
+                        channelCountries[c.id] = c.snippet.country;
+                    }
+                });
+            } catch (e) {
+                console.warn('Channel country fetch failed', e);
+            }
+        }
 
         // Step 3: Compute Velocity Score
         const videos = statsResponse.data.items.map(item => {
@@ -104,6 +165,7 @@ export default async function handler(req, res) {
                 title: item.snippet.title,
                 channelTitle: item.snippet.channelTitle,
                 channelId: item.snippet.channelId,
+                channelCountry: channelCountries[item.snippet.channelId] || null,
                 thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.medium?.url,
                 publishedAt: item.snippet.publishedAt,
                 views,
@@ -126,11 +188,12 @@ export default async function handler(req, res) {
 
         res.json({
             items: videos,
-            nextPageToken: searchResponse.data.nextPageToken || null,
+            nextPageToken: nextToken,
             meta: {
                 niche,
                 windowDays: windowDaysInt,
-                publishedAfter: publishedAfterISO,
+                regionCode,
+                languageMode,
                 count: videos.length
             }
         });

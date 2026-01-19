@@ -1743,3 +1743,78 @@ body {
         font-size: 1.5rem;
     }
 }
+
+/* ========================================
+   FEED FILTERS & CONTROLS
+   ======================================== */
+.filter-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.filter-select {
+    padding: 0.5rem 1rem;
+    background: var(--bg-card-hover);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    outline: none;
+    cursor: pointer;
+}
+
+.filter-select:focus {
+    border-color: var(--accent-purple);
+}
+
+.toggle-group {
+    display: flex;
+    background: var(--bg-card-hover);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+}
+
+.toggle-btn {
+    padding: 0.25rem 0.75rem;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+}
+
+.toggle-btn.active {
+    background: var(--bg-card);
+    color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.icon-only {
+    padding: 0.5rem;
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+@media (max-width: 768px) {
+    .filter-row {
+        gap: var(--spacing-sm);
+    }
+
+    .filter-select,
+    .toggle-group {
+        width: 100%;
+    }
+
+    .toggle-group {
+        justify-content: space-between;
+    }
+
+    .toggle-btn {
+        flex: 1;
+    }
+}
