@@ -13,7 +13,10 @@ const NICHES = [
 
 let currentNiche = 'couples';
 
-function renderTrending(container) {
+// State for caching trending results in memory
+const trendingCache = {};
+
+async function renderTrending(container) {
     container.innerHTML = `
         <div class="page-header">
             <h1>🔥 Trending</h1>
@@ -35,76 +38,146 @@ function renderTrending(container) {
                 `).join('')}
             </div>
         </div>
-        
-        <!-- Manual Discover Instructions -->
-        <div class="trending-instructions card">
-            <h3>🔧 Discover Trending Content</h3>
-            <p>To find trending ${getCurrentNicheLabel()} content, run:</p>
-            <div class="code-block">
-                <code>python tools/discover_trending.py ${currentNiche}</code>
-                <button class="copy-btn" onclick="copyToClipboard('python tools/discover_trending.py ${currentNiche}')">
-                    📋 Copy
-                </button>
-            </div>
-            <p class="help-text">
-                This will search for trending videos, compute trend scores, and cache results for 6 hours.
-            </p>
-            <div class="quota-warning">
-                ⚠️ <strong>Quota:</strong> Uses 100+ units per discovery. Results are cached for 6 hours.
-            </div>
-        </div>
-        
-        <!-- Example: What You'll Get -->
-        <div class="example-results card">
-            <h3>📊 What You'll See</h3>
-            <p class="help-text">Terminal output will show:</p>
-            
-            <div class="example-video">
-                <div class="example-rank">#1</div>
-                <div class="example-content">
-                    <strong>Example: Best Couples Vlog 2026</strong>
-                    <div class="example-meta">
-                        <span>Channel: LoveStory</span>
-                        <span>🔥 Trend Score: 87/100</span>
-                    </div>
-                    <div class="example-stats">
-                        📊 120,000 views
-                    </div>
-                    <div class="example-explanation">
-                        💡 🚀 Explosive growth • 💬 Very engaged audience • 🔥 Just published
-                    </div>
-                </div>
-            </div>
-            
-            <p class="help-text" style="margin-top: 1rem;">
-                Plus: Top trending channels, aggregated scores, and cache info.
-            </p>
-        </div>
-        
-        <!-- Trend Score Legend -->
-        <div class="trend-legend card">
-            <h3>📈 How Trend Scores Work</h3>
-            <div class="legend-grid">
-                <div class="legend-item">
-                    <strong>View Velocity (50%)</strong>
-                    <p>Views per day since publish</p>
-                </div>
-                <div class="legend-item">
-                    <strong>Engagement Rate (30%)</strong>
-                    <p>(Likes + Comments) / Views</p>
-                </div>
-                <div class="legend-item">
-                    <strong>Recency Boost (20%)</strong>
-                    <p>2x for &lt;7 days, 1.5x for &lt;14 days</p>
-                </div>
-            </div>
-            <div class="score-ranges">
-                <span class="score-badge score-high">80-100: 🔥 On fire</span>
-                <span class="score-badge score-med">50-79: 📈 Rising</span>
-                <span class="score-badge score-low">0-49: 📊 Steady</span>
+
+        <!-- Content Area -->
+        <div id="trending-content">
+            <div class="loading-state">
+                <div class="loader"></div>
+                <p>Analyzing trends for ${getCurrentNicheLabel()}...</p>
             </div>
         </div>
     `;
+
+    // Check auth
+    if (!window.authManager || !window.authManager.isSignedIn()) {
+        renderAuthPrompt(document.getElementById('trending-content'));
+        return;
+    }
+
+    await loadAndRenderVideos(currentNiche);
+}
+
+function renderAuthPrompt(container) {
+    container.innerHTML = `
+        <div class="empty-state">
+            <p class="empty-icon">🔒</p>
+            <h2>Sign in to Discover Trends</h2>
+            <p>We need your permission to access YouTube search functionality.</p>
+            <button class="sign-in-btn" onclick="handleSignIn()">Sign in with Google</button>
+        </div>
+    `;
+}
+
+async function loadAndRenderVideos(nicheId) {
+    const container = document.getElementById('trending-content');
+    if (!container) return;
+
+    // Use cache if available
+    if (trendingCache[nicheId]) {
+        renderVideos(trendingCache[nicheId], container);
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="loading-state">
+            <div class="loader"></div>
+            <p>Scanning YouTube for rising ${getCurrentNicheLabel()} content...</p>
+            <small style="color: #aaa; display: block; margin-top: 8px;">Analyzing velocity, engagement, and recency</small>
+        </div>
+    `;
+
+    try {
+        const niche = NICHES.find(n => n.id === nicheId);
+        const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(niche.query)}`);
+
+        if (!response.ok) throw new Error('Failed to fetch trending videos');
+
+        const data = await response.json();
+        const videos = data.items || [];
+
+        // Cache properly
+        trendingCache[nicheId] = videos;
+
+        renderVideos(videos, container);
+
+    } catch (error) {
+        console.error('Trending error:', error);
+        container.innerHTML = `
+            <div class="empty-state">
+                <p class="empty-icon">⚠️</p>
+                <h2>Unable to Load Trends</h2>
+                <p>Something went wrong while scanning for trends. Please try again.</p>
+                <button class="action-btn" onclick="loadAndRenderVideos('${nicheId}')">Try Again</button>
+            </div>
+        `;
+    }
+}
+
+function renderVideos(videos, container) {
+    if (videos.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <p>No trending videos found for this niche right now.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const videoCards = videos.map((video, index) => `
+        <div class="video-card trend-card">
+            <div class="trend-rank">#${index + 1}</div>
+            <img src="${video.thumbnail}" alt="${video.title}" class="video-thumb">
+            <div class="video-info">
+                <h3 class="video-title">${video.title}</h3>
+                <p class="channel-name">${video.channelTitle}</p>
+                
+                <div class="trend-stats">
+                    <span class="score-badge ${getScoreClass(video.trendScore)}">
+                        🔥 ${video.trendScore}/100
+                    </span>
+                    <span class="view-count">${window.formatNumber(video.views)} views</span>
+                </div>
+                
+                <div class="trend-explanation">
+                    💡 ${video.trendExplanation}
+                </div>
+                
+                <a href="https://www.youtube.com/watch?v=${video.id}" target="_blank" class="watch-link">
+                    Watch on YouTube ↗
+                </a>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = `
+        <div class="trending-grid">
+            ${videoCards}
+        </div>
+        
+        <div class="trend-legend card" style="margin-top: 3rem;">
+             <h3>📈 How Trend Scores Work</h3>
+             <div class="legend-grid">
+                 <div class="legend-item">
+                     <strong>View Velocity (50%)</strong>
+                     <p>Views per day since publish</p>
+                 </div>
+                 <div class="legend-item">
+                     <strong>Engagement Rate (30%)</strong>
+                     <p>(Likes + Comments) / Views</p>
+                 </div>
+                 <div class="legend-item">
+                     <strong>Recency Boost (20%)</strong>
+                     <p>Bonus for content < 1 week old</p>
+                 </div>
+             </div>
+        </div>
+    `;
+}
+
+function getScoreClass(score) {
+    if (score >= 80) return 'score-high';
+    if (score >= 50) return 'score-med';
+    return 'score-low';
 }
 
 function selectNiche(nicheId) {
@@ -119,23 +192,7 @@ function selectNiche(nicheId) {
         }
     });
 
-    // Update command
-    const codeBlock = document.querySelector('.trending-instructions code');
-    if (codeBlock) {
-        codeBlock.textContent = `python tools/discover_trending.py ${nicheId}`;
-    }
-
-    // Update copy button
-    const copyBtn = document.querySelector('.trending-instructions .copy-btn');
-    if (copyBtn) {
-        copyBtn.onclick = () => copyToClipboard(`python tools/discover_trending.py ${nicheId}`);
-    }
-
-    // Update description
-    const description = document.querySelector('.trending-instructions p');
-    if (description) {
-        description.textContent = `To find trending ${getCurrentNicheLabel()} content, run:`;
-    }
+    loadAndRenderVideos(nicheId);
 }
 
 function getCurrentNicheLabel() {
