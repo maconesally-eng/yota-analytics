@@ -79,7 +79,7 @@ async function renderDashboard(container) {
     ` : '';
 
     container.innerHTML = `
-        ${demoBanner}
+        ${banner}
         ${renderChannelCard(data.channel)}
         ${renderMomentumCard(data.insights)}
         ${renderinsightsGrid(data.insights)}
