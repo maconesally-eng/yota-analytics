@@ -151,6 +151,7 @@ async function performSearch(query) {
         }
 
         const response = await fetch(url);
+        if (response.status === 401) throw new Error('Unauthorized');
         if (!response.ok) throw new Error('Search failed');
 
         const data = await response.json();
@@ -161,8 +162,23 @@ async function performSearch(query) {
 
     } catch (error) {
         console.error('Search error:', error);
-        showErrorState();
+        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+            showSignInState();
+        } else {
+            showErrorState();
+        }
     }
+}
+
+function showSignInState() {
+    const container = document.getElementById('search-loading');
+    container.classList.remove('hidden');
+    container.innerHTML = `
+        <p class="empty-icon">🔒</p>
+        <h3>Sign In Required</h3>
+        <p class="error-message">You must be signed in to search YouTube.</p>
+        <button class="btn" onclick="document.getElementById('sign-in-btn').click()">Sign In with Google</button>
+    `;
 }
 
 function renderResults(results) {
