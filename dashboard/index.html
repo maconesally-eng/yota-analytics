@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yota Analytics</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main Content Area -->
+        <div class="main-wrapper">
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <h1 class="app-title">Yota Analytics</h1>
+                    <p class="app-tagline">You're building this together</p>
+                </div>
+                <div class="top-bar-right" id="exports-container"></div>
+            </header>
+
+            <!-- Page Content -->
+            <main id="app-content" class="app-content">
+                <!-- Pages will render here -->
+            </main>
+        </div>
+    </div>
+
+    <!-- Core Scripts -->
+    <script src="state.js"></script>
+    <script src="router.js"></script>
+
+    <!-- Components -->
+    <script src="components/sidebar.js"></script>
+    <script src="components/exports.js"></script>
+
+    <!-- Pages -->
+    <script src="pages/dashboard.js"></script>
+    <script src="pages/search.js"></script>
+    <script src="pages/trending.js"></script>
+    <script src="pages/settings.js"></script>
+
+    <!-- Main App -->
+    <script src="app.js"></script>
+</body>
+
+</html>
