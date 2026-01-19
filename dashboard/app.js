@@ -38,6 +38,17 @@ document.addEventListener('DOMContentLoaded', () => {
         window.renderSettings(content);
     });
 
+    // New routes for Swipe Feed
+    window.router.register('/', () => {
+        const content = document.getElementById('app-content');
+        window.renderLanding(content);
+    });
+
+    window.router.register('/feed', () => {
+        const content = document.getElementById('app-content');
+        window.renderFeed(content);
+    });
+
     // Initialize routing (will trigger initial page load)
     window.router.handleRoute();
 });
