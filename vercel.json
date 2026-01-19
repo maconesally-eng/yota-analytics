@@ -23,11 +23,6 @@
             "source": "/settings",
             "destination": "/#/settings",
             "permanent": false
-        },
-        {
-            "source": "/pages/:page.js",
-            "destination": "/#/:page",
-            "permanent": false
         }
     ],
     "rewrites": [
