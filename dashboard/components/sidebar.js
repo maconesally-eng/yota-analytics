@@ -86,9 +86,19 @@ window.addEventListener('auth-state-changed', () => {
 });
 
 // Initial render
-window.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for authManager to initialize
-    setTimeout(renderSidebarAuth, 500);
+window.addEventListener('load', () => {
+    // Check multiple times as authManager might be initializing
+    const checkAuth = setInterval(() => {
+        if (window.authManager) {
+            renderSidebarAuth();
+            if (window.authManager.isSignedIn()) {
+                clearInterval(checkAuth);
+            }
+        }
+    }, 100);
+
+    // Stop checking after 2 seconds anyway
+    setTimeout(() => clearInterval(checkAuth), 2000);
 });
 
 // Export for use in main app

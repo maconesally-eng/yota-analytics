@@ -4,33 +4,46 @@
  */
 
 async function renderDashboard(container) {
-    // Try to load analytics data
-    let data = window.stateManager.getAnalyticsData();
+    // 1. Check for Authentication
+    const isSignedIn = window.authManager && window.authManager.isSignedIn();
+
+    let data = null;
     let isDemo = false;
+    let isLive = false;
 
-    // If no data in state, try to fetch from file
-    if (!data) {
-        try {
-            const response = await fetch('../output/analytics.json');
-            if (response.ok) {
-                data = await response.json();
-                window.stateManager.setAnalyticsData(data);
-
-                // Add to recent channels
-                if (data.channel) {
-                    window.stateManager.addRecentChannel(
-                        data.channel.channel_id || 'unknown',
-                        data.channel.name,
-                        data.channel.handle
-                    );
-                }
-            }
-        } catch (error) {
-            console.log('No production data, trying demo data...');
+    // 2. If signed in, prioritize LIVE data
+    if (isSignedIn) {
+        container.innerHTML = `
+            <div class="loading-state">
+                <div class="loader"></div>
+                <p>Fetching live analytics from your YouTube channel...</p>
+            </div>
+        `;
+        data = await window.liveAnalytics.fetchFullDashboardData();
+        if (data) {
+            isLive = true;
+            // Update state so other components can use it
+            window.stateManager.setAnalyticsData(data);
         }
     }
 
-    // Fallback to demo data for deployed version
+    // 3. Fallback to State/File data if not live
+    if (!data) {
+        data = window.stateManager.getAnalyticsData();
+
+        if (!data || data.isLive) { // If stored data is old live data, try to refresh or use file
+            try {
+                const response = await fetch('../output/analytics.json');
+                if (response.ok) {
+                    data = await response.json();
+                }
+            } catch (error) {
+                console.log('No production data found.');
+            }
+        }
+    }
+
+    // 4. Fallback to Demo Data
     if (!data) {
         try {
             const demoResponse = await fetch('./demo-data.json');
@@ -48,16 +61,20 @@ async function renderDashboard(container) {
             <div class="empty-state">
                 <p class="empty-icon">📊</p>
                 <h2>No Analytics Data</h2>
-                <p>Run <code>python main.py</code> to generate analytics, then refresh this page.</p>
+                <p>Sign in with Google or run <code>python main.py</code> locally.</p>
             </div>
         `;
         return;
     }
 
     // Render dashboard
-    const demoBanner = isDemo ? `
+    const banner = isLive ? `
+        <div class="live-banner">
+            📡 <strong>Live Data</strong> — Connected to your YouTube channel.
+        </div>
+    ` : isDemo ? `
         <div class="demo-banner">
-            🎭 <strong>Demo Mode</strong> — This is sample data. Run <code>python main.py</code> locally to see your real channel analytics.
+            🎭 <strong>Demo Mode</strong> — This is sample data. Sign in with Google to see your real channel analytics.
         </div>
     ` : '';
 
