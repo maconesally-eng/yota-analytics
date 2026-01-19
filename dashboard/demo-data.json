@@ -1,0 +1,87 @@
+{
+    "channel": {
+        "channel_id": "UCdemo123456789",
+        "name": "YotaCreators Demo",
+        "handle": "@yotacreators",
+        "subscribers": 52400,
+        "total_views": 3250000,
+        "total_videos": 87
+    },
+    "recent_videos": [
+        {
+            "title": "Our Biggest Announcement Yet!",
+            "views": 145000,
+            "likes": 8200,
+            "comments": 1450,
+            "published_at": "2026-01-17T14:00:00Z",
+            "engagement_rate": 6.65
+        },
+        {
+            "title": "Day In Our Life: New York Edition",
+            "views": 89000,
+            "likes": 4500,
+            "comments": 890,
+            "published_at": "2026-01-14T10:00:00Z",
+            "engagement_rate": 6.05
+        },
+        {
+            "title": "Q&A: You Asked, We Answered!",
+            "views": 72000,
+            "likes": 5100,
+            "comments": 1200,
+            "published_at": "2026-01-10T16:00:00Z",
+            "engagement_rate": 8.75
+        },
+        {
+            "title": "Couples Challenge: Try Not To Laugh",
+            "views": 65000,
+            "likes": 3800,
+            "comments": 720,
+            "published_at": "2026-01-07T12:00:00Z",
+            "engagement_rate": 6.95
+        },
+        {
+            "title": "Weekly Vlog: Behind The Scenes",
+            "views": 48000,
+            "likes": 2600,
+            "comments": 450,
+            "published_at": "2026-01-03T09:00:00Z",
+            "engagement_rate": 6.35
+        },
+        {
+            "title": "Reacting To Our Old Videos",
+            "views": 42000,
+            "likes": 2200,
+            "comments": 380,
+            "published_at": "2025-12-28T11:00:00Z",
+            "engagement_rate": 6.14
+        },
+        {
+            "title": "Holiday Special: Gift Exchange",
+            "views": 58000,
+            "likes": 3400,
+            "comments": 620,
+            "published_at": "2025-12-24T10:00:00Z",
+            "engagement_rate": 6.93
+        },
+        {
+            "title": "2025 Recap: Our Best Moments",
+            "views": 95000,
+            "likes": 6200,
+            "comments": 980,
+            "published_at": "2025-12-20T14:00:00Z",
+            "engagement_rate": 7.56
+        }
+    ],
+    "insights": {
+        "avg_views_per_video": 76750,
+        "avg_engagement_rate": 6.92,
+        "best_upload_day": "Wednesday",
+        "upload_consistency": "1 video every 4 days",
+        "best_performing_video": "Our Biggest Announcement Yet!",
+        "momentum_score": 78,
+        "momentum_label": "Strong momentum 💪"
+    },
+    "generated_at": "2026-01-19T10:00:00Z",
+    "schema_version": "1.0"
+}

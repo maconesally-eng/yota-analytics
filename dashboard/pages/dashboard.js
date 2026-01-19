@@ -6,6 +6,7 @@
 async function renderDashboard(container) {
     // Try to load analytics data
     let data = window.stateManager.getAnalyticsData();
+    let isDemo = false;
 
     // If no data in state, try to fetch from file
     if (!data) {
@@ -25,7 +26,20 @@ async function renderDashboard(container) {
                 }
             }
         } catch (error) {
-            console.error('Error loading analytics:', error);
+            console.log('No production data, trying demo data...');
+        }
+    }
+
+    // Fallback to demo data for deployed version
+    if (!data) {
+        try {
+            const demoResponse = await fetch('./demo-data.json');
+            if (demoResponse.ok) {
+                data = await demoResponse.json();
+                isDemo = true;
+            }
+        } catch (error) {
+            console.error('Error loading demo data:', error);
         }
     }
 
@@ -41,7 +55,14 @@ async function renderDashboard(container) {
     }
 
     // Render dashboard
+    const demoBanner = isDemo ? `
+        <div class="demo-banner">
+            🎭 <strong>Demo Mode</strong> — This is sample data. Run <code>python main.py</code> locally to see your real channel analytics.
+        </div>
+    ` : '';
+
     container.innerHTML = `
+        ${demoBanner}
         ${renderChannelCard(data.channel)}
         ${renderMomentumCard(data.insights)}
         ${renderinsightsGrid(data.insights)}
